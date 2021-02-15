@@ -1,3 +1,7 @@
+'''
+MODIFIED FROM https://github.com/adafruit/Adafruit_BNO08x
+'''
+
 from struct import unpack_from, pack_into
 from collections import namedtuple
 import time

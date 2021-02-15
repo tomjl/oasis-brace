@@ -5,6 +5,8 @@
 
     Subclass of `adafruit_bno08x.BNO08X` to use I2C
 
+    MODIFIED FROM: https://github.com/adafruit/Adafruit_BNO08x
+
 """
 from struct import pack_into
 import adafruit_bus_device.i2c_device as i2c_device
