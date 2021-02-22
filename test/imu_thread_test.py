@@ -20,25 +20,28 @@ from bno08x import (
 
 
 i2c = busio.I2C(board.SCL, board.SDA)
-imu = BNO08X_I2C(i2c, address= _BNO08X_DEFAULT_ADDRESS)
+IMU1 = BNO08X_I2C(i2c, address= _BNO08X_DEFAULT_ADDRESS)
+IMU2 = BNO08X_I2C(i2c, address= _BNO08X_DEFAULT_ADDRESS+1)
 
+# can't really afford to grab gravity for now. maybe get it once in the beginning?
+ENABLED_REPORTS = [
+					BNO_REPORT_LINEAR_ACCELERATION,
+					BNO_REPORT_GEOMAGNETIC_ROTATION_VECTOR
+]
 
-imu.enable_feature(BNO_REPORT_LINEAR_ACCELERATION)
-imu.enable_feature(BNO_REPORT_GEOMAGNETIC_ROTATION_VECTOR)
-imu.enable_feature(BNO_REPORT_GRAVITY)
+for sensor in [IMU1, IMU2]:
+	for report in ENABLED_REPORTS:
+		sensor.enable_feature(report)
 
+IMU_SAMPLING_PERIOD = 0.0001
 
-SAMPLING_PERIOD = 0.2
+imu_thread = parallel.IMU_Thread(IMU1, IMU2, IMU_SAMPLING_PERIOD)
 
-imu_thread = parallel.IMU_Thread(imu)
-dataQ = imu_thread.q 
-
-timer = parallel.Timer(3,imu_thread)
-timer.start()
+imu_thread.start()
 
 while True:
-	if not dataQ.empty():
-		print(dataQ.get())
+	if not imu_thread.q.empty():
+		print(imu_thread.q.get())
 	
 
 	print("smile :)")

@@ -4,8 +4,8 @@ import board
 import busio
 import parallel
 import util
-from rob12859 import ROB12859
-from rob12859 import _DEFAULT_PIN_CONFIG
+from rob12859 import ROB12859, BraceMotors
+from rob12859 import _PIN_CONFIG_1, _PIN_CONFIG_2 
 from i2c import BNO08X_I2C, _BNO08X_DEFAULT_ADDRESS
 from bno08x import (
 	BNO_REPORT_ACCELEROMETER,
@@ -36,10 +36,9 @@ for sensor in [IMU1, IMU2]:
 	for report in ENABLED_REPORTS:
 		sensor.enable_feature(report)
 
-IMU_SAMPLING_PERIOD = 0.2
+IMU_SAMPLING_PERIOD = 0.0001
 
-IMU1_t = parallel.IMU_Thread(IMU1, IMU_SAMPLING_PERIOD)
-IMU2_t = parallel.IMU_Thread(IMU2, IMU_SAMPLING_PERIOD)
+IMU_t = parallel.IMU_Thread(IMU1, IMU2, IMU_SAMPLING_PERIOD)
 
 # ----------------------------------- #
 
@@ -47,16 +46,19 @@ IMU2_t = parallel.IMU_Thread(IMU2, IMU_SAMPLING_PERIOD)
 # --------- Initialize Motors --------- #
 
 pi = pigpio.pi()
-motor = ROB12859(pi, _DEFAULT_PIN_CONFIG)
-motor_t = parallel.Motor_Thread(motor)
+
+motor1 = ROB12859(pi, _PIN_CONFIG_1)
+motor2 = ROB12859(pi, _PIN_CONFIG_2)
+motors = BraceMotors(motor1, motor2)
+
+motor_t = parallel.Motor_Thread(motors)
  
 # ------------------------------------- #
 
 # --------- GO GO GO !!! --------- #
 
 motor_t.start()
-IMU1_t.start()
-IMU2_t.start()
+IMU_t.start()
 
 
 TEST_PATH = [0, 5, 2, 4, 9, 1, 10, 0]
@@ -64,18 +66,15 @@ idx = 0
 print("starting")
 try:
 	while True:
-		while not IMU1_t.q.empty():
-			accel = IMU1_t.q.get()[BNO_REPORT_LINEAR_ACCELERATION]
-		while not IMU2_t.q.empty():
-			accel = IMU2_t.q.get()[BNO_REPORT_LINEAR_ACCELERATION]
+		while not IMU_t.q.empty():
+			accel = IMU_t.q.get()[1][BNO_REPORT_LINEAR_ACCELERATION]
 
 		motor_t.q.put(TEST_PATH[idx%len(TEST_PATH)])
 		idx += 1
-		time.sleep(1)
+		time.sleep(4)
 
 except:
-	IMU1_t.cancel()
-	IMU2_t.cancel()
+	IMU_t.cancel()
 	motor_t.cancel()
 
 

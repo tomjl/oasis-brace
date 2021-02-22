@@ -19,10 +19,11 @@ class IMU_Thread(Thread):
 
 	"""
 
-	def __init__(self, imu, sample_period, queue=Queue()):
+	def __init__(self, imu1, imu2, sample_period, queue=Queue()):
 		Thread.__init__(self)
 		self.sample_period = sample_period
-		self.imu = imu
+		self.imu1 = imu1
+		self.imu2 = imu2
 		self.q = queue
 		self.finished = Event()
 		self.t0 = time.time()
@@ -35,14 +36,14 @@ class IMU_Thread(Thread):
 		while not self.finished.is_set():
 			self.finished.wait(self.sample_period)
 			
-			readings = self.imu.all_readings
-			readings['dt'] = time.time()-self.t0
-			print(readings['dt'])
+			readings1 = self.imu1.all_readings
+			readings2 = self.imu2.all_readings
+			dt = time.time()-self.t0
+
+			print(dt)
 			self.t0 = time.time()
 
-			self.q.put(readings)
-
-
+			self.q.put((dt,readings1, readings2))
 
 
 class Motor_Thread(Thread):
@@ -51,9 +52,9 @@ class Motor_Thread(Thread):
 	Runs until you stop it
 	Accepts motor position commands into a queue.
 	"""
-	def __init__(self, motor, queue=Queue()):
+	def __init__(self, motors, queue=Queue()):
 		Thread.__init__(self)
-		self.motor = motor
+		self.motors = motors
 		self.q = queue
 		self.finished = Event()
 
@@ -64,19 +65,11 @@ class Motor_Thread(Thread):
 		while not self.finished.is_set():
 			if not self.q.empty():
 				position = self.q.get()
-				self.motor.movetoPosition(position)
+				self.motors.movetoPosition(position)
 				
 				# safety wait seems to make threads share better :)
 				time.sleep(1)
 				# otherwise this thread seems to hog cpu time.
-
-
-
-
-
-
-
-
 
 
 
