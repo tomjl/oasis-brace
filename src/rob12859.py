@@ -154,6 +154,13 @@ class BraceMotors:
 		
 		self.ticks_per_mm = motor1.stepsize['ticks_per_step']*_STEPS_PER_REV/_DISTANCE_PER_REV
 
+	def abort(self):
+		self.M1._stop()
+		self.M2._stop()
+		self.M1._disable()
+		self.M2._disable()
+		return
+
 	def setSpeed(self,speed):
 		self.M1.setSpeed(speed)
 		self.M2.setSpeed(speed)

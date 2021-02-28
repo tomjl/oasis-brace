@@ -1,16 +1,13 @@
 import time
 from threading import Thread, Event
 from queue import Queue
-from i2c import BNO08X_I2C
-from i2c import _BNO08X_DEFAULT_ADDRESS
-
 
 class IMU_Thread(Thread):
 	"""
 	The wrapper that lets us order motors to do things and not wait for it to complete 
 	
-	Repeats every sampling period
-			t = IMU_Thread(imu, 3)
+	Repeats as fast as possible
+			t = IMU_Thread(imu)
 			t.start()
 			t.cancel()     # stop the thread's action if it's still waiting
 
@@ -19,14 +16,12 @@ class IMU_Thread(Thread):
 
 	"""
 
-	def __init__(self, imu1, imu2, sample_period, queue=Queue()):
+	def __init__(self, imu1, imu2, queue=Queue()):
 		Thread.__init__(self)
-		self.sample_period = sample_period
 		self.imu1 = imu1
 		self.imu2 = imu2
 		self.q = queue
 		self.finished = Event()
-		self.t0 = time.time()
 
 	def cancel(self):
 		"""Stop the timer if it hasn't finished yet."""
@@ -34,16 +29,11 @@ class IMU_Thread(Thread):
 
 	def run(self):
 		while not self.finished.is_set():
-			self.finished.wait(self.sample_period)
 			
 			readings1 = self.imu1.all_readings
 			readings2 = self.imu2.all_readings
-			dt = time.time()-self.t0
 
-			print(dt)
-			self.t0 = time.time()
-
-			self.q.put((dt,readings1, readings2))
+			self.q.put((time.time(),readings1, readings2))
 
 
 class Motor_Thread(Thread):
@@ -51,6 +41,8 @@ class Motor_Thread(Thread):
 	The wrapper that lets us order motors to do things and not wait for it to complete 
 	Runs until you stop it
 	Accepts motor position commands into a queue.
+
+	TODO: change queue to accept state commands instead of positional ones
 	"""
 	def __init__(self, motors, queue=Queue()):
 		Thread.__init__(self)
@@ -63,13 +55,39 @@ class Motor_Thread(Thread):
 
 	def run(self):
 		while not self.finished.is_set():
-			if not self.q.empty():
-				position = self.q.get()
-				self.motors.movetoPosition(position)
-				
-				# safety wait seems to make threads share better :)
-				time.sleep(1)
-				# otherwise this thread seems to hog cpu time.
+			position = self.q.get(block=True) # oh my god this actually worked
+			self.motors.movetoPosition(position)
 
+		self.motors.abort() # stop motors from running if cancel() is called
+
+
+class Classifier_Thread(Thread):
+	"""
+	The wrapper that automatically updates the motion state when a new IMU sample arrives.
+	each operation takes order 1e-5 seconds so the thread blocks between IMU samples (0.023 s average)
+
+	Right now it doesn't do anything with the values
+
+	TODO: Issue state commands to motor thread via output queue
+	"""
+	def __init__(self, classifier, input_q, output_q):
+		Thread.__init__(self)
+		self.classifier = classifier
+		self.input_q  = input_q
+		self.output_q = output_q
+		self.finished = Event()
+
+	def cancel(self):
+		self.finished.set()
+
+	def run(self):
+		# REMOVE THESE PRINTS EVENTUALLY
+		t0 = time.time()
+		while not self.finished.is_set():
+			sample = self.input_q.get(block=True) # wait on new samples
+			self.classifier.addSample(sample)
+			state = self.classifier.getState()
+			print(time.time()-t0, state)
+			t0 = time.time()
 
 
