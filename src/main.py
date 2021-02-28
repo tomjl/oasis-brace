@@ -81,8 +81,7 @@ idx = 0
 print("starting")
 try:
 	while True:
-
-		motor_t.q.put(TEST_PATH[idx%len(TEST_PATH)])
+		motormoves_q.put(TEST_PATH[idx%len(TEST_PATH)])
 		idx += 1
 		time.sleep(4)
 
@@ -90,8 +89,5 @@ except:
 	print('CANCELLING')
 	IMU_t.cancel()
 	motor_t.cancel()
-
-
-
 
 
