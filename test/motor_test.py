@@ -11,8 +11,8 @@ ENABLE=8
 
 pi = pigpio.pi()
 
-pi.write(MS1,0)
-pi.write(MS2,0)
+pi.write(MS1,1) # eighth step
+pi.write(MS2,1)
 pi.write(MS3,0)
 
 pi.write(DIR,1)

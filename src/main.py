@@ -22,8 +22,8 @@ from bno08x import (
 
 # --------- Initialize Queues ---------#
 
-data_q       = Queue()
-motormoves_q = Queue() 
+data_q       = parallel.IMU_Queue()
+motormoves_q = parallel.Motor_Queue() 
 
 # ----------------------------------- #
 
@@ -34,7 +34,7 @@ i2c = busio.I2C(board.SCL, board.SDA)
 IMU1 = BNO08X_I2C(i2c, address= _BNO08X_DEFAULT_ADDRESS)
 IMU2 = BNO08X_I2C(i2c, address= _BNO08X_DEFAULT_ADDRESS+1)
 
-# can't really afford to grab gravity for now. maybe get it once in the beginning?
+# The more reports enabled, the longer it takes to read. for now we're just using angle
 ENABLED_REPORTS = [
 					BNO_REPORT_ROTATION_VECTOR
 ]
@@ -43,7 +43,7 @@ for sensor in [IMU1, IMU2]:
 	for report in ENABLED_REPORTS:
 		sensor.enable_feature(report)
 
-IMU_t = parallel.IMU_Thread(IMU1, IMU2, queue=data_q)
+IMU_t = parallel.IMU_Thread(IMU1, IMU2, data_q)
 
 # ----------------------------------- #
 
@@ -56,7 +56,7 @@ motor1 = ROB12859(pi, _PIN_CONFIG_1)
 motor2 = ROB12859(pi, _PIN_CONFIG_2)
 motors = BraceMotors(motor1, motor2)
 
-motor_t = parallel.Motor_Thread(motors, queue=motormoves_q)
+motor_t = parallel.Motor_Thread(motors, motormoves_q)
  
 # ------------------------------------- #
 
@@ -81,7 +81,7 @@ idx = 0
 print("starting")
 try:
 	while True:
-		motormoves_q.put(TEST_PATH[idx%len(TEST_PATH)])
+		#motormoves_q.put(TEST_PATH[idx%len(TEST_PATH)])
 		idx += 1
 		time.sleep(4)
 
@@ -89,5 +89,6 @@ except:
 	print('CANCELLING')
 	IMU_t.cancel()
 	motor_t.cancel()
+	classifier_t.cancel()
 
 

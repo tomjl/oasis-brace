@@ -32,10 +32,10 @@ _BACKWARD = 0
 _MOTOR_ON  = 0
 _MOTOR_OFF = 1
 
-_MAX_DISTANCE = 10 # 10 mm
-_MIN_DISTANCE = 0  # 0 mm
+_MAX_DISTANCE = 8 # 8 mm
+_MIN_DISTANCE = 0 # 0 mm
 
-_SPEED = 8000 # PWM speed in Hz
+_SPEED = 500 # PWM speed in Hz
 
 
 """
@@ -75,7 +75,7 @@ class ROB12859:
 	def __init__(self, gpio, pin_config):
 		self._pin_config = pin_config
 		self.gpio  		 = gpio
-		self.stepsize 	 = _EIGHTH_STEP
+		self.stepsize 	 = _SIXTEENTH_STEP
 		self.DIR 		 = _FORWARD
 		self.speed 		 = _SPEED
 		self._initialize_driver()

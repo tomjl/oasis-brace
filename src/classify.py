@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import util
 from bno08x import (
 	BNO_REPORT_LINEAR_ACCELERATION,
 	BNO_REPORT_ROTATION_VECTOR,
@@ -8,10 +9,46 @@ from bno08x import (
 
 _TIME_DELAY = 1.35 # 1.35 seconds from test data seems to work well 
 _BUFFER_SIZE = 300 # 0.023s unimpeded average = 6.89 second buffer. should be more than enough
-_THRESHOLDS = [50, 45] # upper, lower
+_THRESHOLDS = [50, 30] # upper, lower
 
 _WALKING_STATE = 0
-_STAIRS_STATE  = 1
+_STAIRS_STATE  = 1 # these would be replaced by state objects in a more complete implementation
+
+_MOTOR_POS_CONFIG = {
+	_WALKING_STATE: 2, # 2 mm
+	_STAIRS_STATE:  4  # 4 mm   
+}
+
+class MotorState:
+	'''
+	State wrapper to standardize state communication
+	Intended use:
+		- set state to anything in config using self.setState()
+		- motors can pull postion with self.position
+
+	NOT CURRENTLY IN USE
+	'''
+
+	def __init__(self, config=_MOTOR_POS_CONFIG):
+		self.state  = _WALKING_STATE # default
+		self.pos_config = config
+
+	def setState(self, state):
+		self.state = state
+
+	@property
+	def position(self):
+		return self.pos_config[self.state]
+	
+	@property
+	def walking(self):
+		return self.state==_WALKING_STATE
+
+	@property
+	def stairs(self):
+		return self.state==_STAIRS_STATE
+	
+	
 
 class SimpleMotionClassifier:
 
@@ -50,9 +87,11 @@ class SimpleMotionClassifier:
 
 	def addSample(self,readings):
 		self.time = readings[0]
-		angle1 = readings[1][BNO_REPORT_ROTATION_VECTOR][0] # first imu, rotation vector, x axis 
-		angle2 = readings[2][BNO_REPORT_ROTATION_VECTOR][0] # second imu, rotation vector, x axis 
-		val = angle1-angle2 # knee angle + some offset
+		angle1 = util.euler_from_quaternion(*readings[1][BNO_REPORT_ROTATION_VECTOR])#[2] # first imu, rotation vector, x axis 
+		angle2 = util.euler_from_quaternion(*readings[2][BNO_REPORT_ROTATION_VECTOR])#[2] # second imu, rotation vector, x axis 
+		# NOTE: 2-1 BECAUSE WE'RE ENSURING POSITIVE ANGLES :)
+		val = angle2[0]-angle1[0] # knee angle + some offset
+		#print('x: %3.2f y: %3.2f z: %3.2f'%(angle1[0]-angle2[0],angle1[1]-angle2[1],angle1[2]-angle2[2]))
 
 		self.data[self.idx] = [self.time,val]
 		self.idx = (self.idx + 1)%self.buffersize # will just keep overwriting the oldest data in the buffer
