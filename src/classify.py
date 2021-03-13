@@ -95,7 +95,7 @@ class SimpleMotionClassifier:
 
 		self.data[self.idx] = [self.time,val]
 		self.idx = (self.idx + 1)%self.buffersize # will just keep overwriting the oldest data in the buffer
-		return
+		return val
 
 	def getState(self):
 		self._recalculate_state()

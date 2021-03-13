@@ -116,14 +116,22 @@ class Classifier_Thread(Thread):
 	def run(self):
 		# REMOVE THESE PRINTS EVENTUALLY
 		t0 = time.time()
+		t1 = time.time()
+		COOLDOWN  = 4 # 4 second cooldown after state switch
+		ANGLE_MAX = 15 # knee less than 30˚ to move 
 		while not self.finished.is_set():
 			sample = self.imu_q.get() # wait on new samples, block=True
-			self.classifier.addSample(sample)
+			knee_angle = self.classifier.addSample(sample)
 
 			state = self.classifier.getState()
-			if state != self.state: # only command motors if the new state is different from the current one
+			cooldown_condition = time.time()-t1 >= COOLDOWN
+			angle_condition = knee_angle <= ANGLE_MAX
+
+			if state != self.state and cooldown_condition and angle_condition: # command new state under certain conditions
 				self.motor_q.put(state)
 				self.state = state
+				t1 = time.time() 
+
 			print(time.time()-t0, state)
 			#print('stairs' if state else 'walking')
 			t0 = time.time()
