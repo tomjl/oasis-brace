@@ -128,12 +128,12 @@ class Classifier_Thread(Thread):
 			angle_condition = knee_angle <= ANGLE_MAX
 
 			if state != self.state and cooldown_condition and angle_condition: # command new state under certain conditions
-				self.motor_q.put(state)
+				self.motor_q.put(self.classifier.motor_config[state])
 				self.state = state
 				t1 = time.time() 
 
-			print(time.time()-t0, state)
-			#print('stairs' if state else 'walking')
+			# print(time.time()-t0, state)
+			print('stairs' if state else 'walking')
 			t0 = time.time()
 
 

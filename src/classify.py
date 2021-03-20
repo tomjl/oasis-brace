@@ -7,16 +7,16 @@ from bno08x import (
 	BNO_REPORT_GEOMAGNETIC_ROTATION_VECTOR,
 )
 
-_TIME_DELAY = 1.35 # 1.35 seconds from test data seems to work well 
+_TIME_DELAY = 1.7 # 1.35 seconds from test data seems to work well 
 _BUFFER_SIZE = 300 # 0.023s unimpeded average = 6.89 second buffer. should be more than enough
-_THRESHOLDS = [50, 30] # upper, lower
+_THRESHOLDS = [40, 15] # upper, lower
 
 _WALKING_STATE = 0
 _STAIRS_STATE  = 1 # these would be replaced by state objects in a more complete implementation
 
 _MOTOR_POS_CONFIG = {
-	_WALKING_STATE: 2, # 2 mm
-	_STAIRS_STATE:  4  # 4 mm   
+	_WALKING_STATE: 0, # 2 mm
+	_STAIRS_STATE:  2  # 4 mm   
 }
 
 class MotorState:
@@ -63,11 +63,12 @@ class SimpleMotionClassifier:
 	
 	'''
 
-	def __init__(self, thresholds=_THRESHOLDS, buffersize=_BUFFER_SIZE, window=_TIME_DELAY):
+	def __init__(self, thresholds=_THRESHOLDS, buffersize=_BUFFER_SIZE, window=_TIME_DELAY, motor_config=_MOTOR_POS_CONFIG):
 		self.buffersize = buffersize
 		self.data = np.zeros((buffersize,2))
 		self.window = window
 		self.thresholds = thresholds
+		self.motor_config = motor_config
 
 		self.idx = 0
 		self.state = _WALKING_STATE

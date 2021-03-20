@@ -35,7 +35,7 @@ _MOTOR_OFF = 1
 _MAX_DISTANCE = 8 # 8 mm
 _MIN_DISTANCE = 0 # 0 mm
 
-_SPEED = 500 # PWM speed in Hz
+_SPEED = 10000 # PWM speed in Hz
 
 
 """
@@ -228,7 +228,7 @@ class BraceMotors:
 		self._move_ticks_delay(dticks, direction)
 
 		self.pos = new_pos # update current position
-		print('Successfully moved to %.1f mm' %d)
+		print('\n\nSuccessfully moved to %.1f mm\n\n' %d)
 
 
 
@@ -239,6 +239,35 @@ if __name__=='__main__':
 	motor2 = ROB12859(pi, _PIN_CONFIG_2)
 
 	motors = BraceMotors(motor1, motor2)
+
+
+	# --------- UNICOMPARTMENTAL SCRIPT ---------- #
+	
+	OFFSET = 3200 # 3200 steps = 2 mm @ 1/16 step
+
+	# offset
+	delta_t  = float(OFFSET)/motor1.speed
+
+	motor1.setDirection(_FORWARD)
+	motor1._start()
+	time.sleep(delta_t - 0.0018)
+	motor1._stop()
+
+	time.sleep(2)
+
+	motors.movetoPosition(4)
+
+	time.sleep(2)
+
+	motors.movetoPosition(0)
+
+	time.sleep(2)
+
+	# undo offset
+	motor1.setDirection(_BACKWARD)
+	motor1._start()
+	time.sleep(delta_t - 0.0018)
+	motor1._stop()
 
 
 
